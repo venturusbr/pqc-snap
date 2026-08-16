@@ -1,0 +1,34 @@
+{
+  "version": "0.1.0",
+  "description": "PQC Account",
+  "proposedName": "PQC Account",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MetaMask/template-snap-monorepo.git"
+  },
+  "source": {
+    "shasum": "NPFoSkY6zjjTXu14yAGrPRjiULWw3b9se05Luc40mvY=",
+    "location": {
+      "npm": {
+        "filePath": "dist/bundle.js",
+        "packageName": "snap",
+        "registry": "https://registry.npmjs.org/"
+      }
+    }
+  },
+  "initialPermissions": {
+    "snap_dialog": {},
+    "snap_manageState": {},
+    "snap_manageAccounts": {},
+    "endowment:keyring": {
+      "allowedOrigins": ["http://localhost:8000"]
+    },
+    "endowment:rpc": {
+      "dapps": true,
+      "snaps": false
+    },
+    "endowment:webassembly": {}
+  },
+  "platformVersion": "10.3.0",
+  "manifestVersion": "0.1"
+}

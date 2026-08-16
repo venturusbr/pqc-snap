@@ -1,0 +1,256 @@
+const { secp256k1 } = require("@noble/curves/secp256k1.js");
+const { keccak_256 } = require("@noble/hashes/sha3");
+
+// Insira aqui o hex da transação 0x44 gerado pelo DApp/Snap
+const hex = process.argv[2] || ""; 
+
+if (!hex) {
+  console.log("Uso: node test_recovery_local_delegation.js <hex_da_transacao_0x44>");
+  console.log("Por favor, forneça o hexadecimal de uma transação assinada do tipo 0x44.");
+  process.exit(0);
+}
+
+const bytes = Buffer.from(hex.startsWith("0x") ? hex.slice(2) : hex, "hex");
+
+// Decodifica elementos manualmente
+let offset = 0;
+const type = bytes[offset++];
+console.log("Transaction Type:", type.toString(16));
+
+if (type !== 0x44) {
+  console.error("Erro: Transação não é do tipo 0x44 (Flexible Delegation Code)!");
+  process.exit(1);
+}
+
+let listLength = 0;
+const firstLengthByte = bytes[offset++];
+if (firstLengthByte >= 0xc0 && firstLengthByte <= 0xf7) {
+  listLength = firstLengthByte - 0xc0;
+} else if (firstLengthByte >= 0xf8 && firstLengthByte <= 0xff) {
+  const lenBytesCount = firstLengthByte - 0xf7;
+  for (let i = 0; i < lenBytesCount; i++) {
+    listLength = (listLength << 8) + bytes[offset++];
+  }
+}
+
+console.log("RLP List Length:", listLength);
+
+// Para tipo 0x44, temos 13 campos no total:
+// 12 campos de preimage + 1 campo contendo a assinatura híbrida/PQC final.
+const fields = [];
+for (let i = 1; i <= 13; i++) {
+  if (offset >= bytes.length) break;
+  const prefix = bytes[offset++];
+  let len = 0;
+  let startOffset = offset;
+  if (prefix < 0x80) {
+    len = 1;
+    startOffset = offset - 1;
+  } else if (prefix <= 0xb7) {
+    len = prefix - 0x80;
+  } else if (prefix <= 0xbf) {
+    const lenBytesCount = prefix - 0xb7;
+    for (let k = 0; k < lenBytesCount; k++) {
+      len = (len << 8) + bytes[offset++];
+    }
+    startOffset = offset;
+  } else if (prefix >= 0xc0 && prefix <= 0xf7) {
+    len = prefix - 0xc0;
+  } else if (prefix >= 0xf8 && prefix <= 0xff) {
+    const lenBytesCount = prefix - 0xf7;
+    for (let k = 0; k < lenBytesCount; k++) {
+      len = (len << 8) + bytes[offset++];
+    }
+    startOffset = offset;
+  }
+  const content = bytes.slice(startOffset, startOffset + len);
+  offset = startOffset + len;
+  fields.push(content);
+}
+
+console.log(`Campos decodificados: ${fields.length} de 13 esperados.`);
+
+if (fields.length < 13) {
+  console.error("Erro: RLP decodificou menos de 13 campos!");
+  process.exit(1);
+}
+
+// Mapeamento dos campos da transação 0x44:
+// 0: dsaType
+// 1: chainId
+// 2: nonce
+// 3: maxPriorityFeePerGas
+// 4: maxFeePerGas
+// 5: gasLimit
+// 6: to
+// 7: value
+// 8: payload (data)
+// 9: accessList
+// 10: authorizationList (EIP-7702 codeDelegations)
+// 11: pqcPublicKey (providedPublicKey)
+// 12: signature (ECDSA + ML-DSA para híbridas, ou ML-DSA pura)
+
+const dsaType = fields[0];
+const chainId = fields[1];
+const nonce = fields[2];
+const maxPriorityFeePerGas = fields[3];
+const maxFeePerGas = fields[4];
+const gasLimit = fields[5];
+const to = fields[6];
+const value = fields[7];
+const payload = fields[8];
+const accessList = fields[9];
+const authorizationList = fields[10];
+const mldsaPubKey = fields[11];
+const signature = fields[12];
+
+const bytesToHex = (b) => Buffer.from(b).toString("hex");
+
+console.log("\n--- Campos Decodificados do RLP (Tipo 0x44) ---");
+console.log("dsaType (hex):", bytesToHex(dsaType));
+console.log("chainId (hex):", bytesToHex(chainId));
+console.log("nonce (hex):", bytesToHex(nonce));
+console.log("maxPriorityFeePerGas (hex):", bytesToHex(maxPriorityFeePerGas));
+console.log("maxFeePerGas (hex):", bytesToHex(maxFeePerGas));
+console.log("gasLimit (hex):", bytesToHex(gasLimit));
+console.log("to (hex):", bytesToHex(to));
+console.log("value (hex):", bytesToHex(value));
+console.log("Tamanho do authorizationList:", authorizationList.length, "bytes");
+console.log("Tamanho da chave pública ML-DSA:", mldsaPubKey.length, "bytes");
+console.log("Tamanho da assinatura completa:", signature.length, "bytes");
+
+const isHybrid = dsaType.length === 2 && dsaType[0] === 0x00 && dsaType[1] === 0x60;
+console.log("Tipo de DSA:", isHybrid ? "Híbrido (ECDSA + ML-DSA)" : "Puro (ML-DSA)");
+
+function numberToBytes(num) {
+  if (num === 0) return new Uint8Array(0);
+  const hexStr = num.toString(16);
+  const padded = hexStr.length % 2 === 0 ? hexStr : '0' + hexStr;
+  return Buffer.from(padded, "hex");
+}
+
+function encodeRLP(item) {
+  if (item instanceof Uint8Array || Buffer.isBuffer(item)) {
+    if (item.length === 1 && item[0] < 0x80) {
+      return item;
+    }
+    if (item.length < 56) {
+      const header = Buffer.alloc(1);
+      header[0] = 0x80 + item.length;
+      return Buffer.concat([header, item]);
+    }
+    const lenBytes = numberToBytes(item.length);
+    const header = Buffer.alloc(1 + lenBytes.length);
+    header[0] = 0xb7 + lenBytes.length;
+    header.set(lenBytes, 1);
+    return Buffer.concat([header, item]);
+  }
+  if (Array.isArray(item)) {
+    let pay = Buffer.alloc(0);
+    for (const subItem of item) {
+      pay = Buffer.concat([pay, encodeRLP(subItem)]);
+    }
+    if (pay.length < 56) {
+      const header = Buffer.alloc(1);
+      header[0] = 0xc0 + pay.length;
+      return Buffer.concat([header, pay]);
+    }
+    const lenBytes = numberToBytes(pay.length);
+    const header = Buffer.alloc(1 + lenBytes.length);
+    header[0] = 0xf7 + lenBytes.length;
+    header.set(lenBytes, 1);
+    return Buffer.concat([header, pay]);
+  }
+}
+
+function decodeRLPListItems(buf) {
+  let off = 0;
+  const first = buf[off++];
+  let listLen = 0;
+  if (first >= 0xc0 && first <= 0xf7) {
+    listLen = first - 0xc0;
+  } else if (first >= 0xf8) {
+    const lenCount = first - 0xf7;
+    for (let i = 0; i < lenCount; i++) {
+      listLen = (listLen << 8) + buf[off++];
+    }
+  }
+  const items = [];
+  while (off < buf.length) {
+    const prefix = buf[off++];
+    let itemLen = 0;
+    let start = off;
+    if (prefix < 0x80) {
+      itemLen = 1;
+      start = off - 1;
+    } else if (prefix <= 0xb7) {
+      itemLen = prefix - 0x80;
+      start = off;
+    } else if (prefix <= 0xbf) {
+      const lenCount = prefix - 0xb7;
+      for (let k = 0; k < lenCount; k++) {
+        itemLen = (itemLen << 8) + buf[off++];
+      }
+      start = off;
+    }
+    const item = buf.slice(start, start + itemLen);
+    off = start + itemLen;
+    items.push(item);
+  }
+  return items;
+}
+
+// Reconstrói a preimage a partir dos primeiros 12 campos
+const fieldsForPreimage = fields.slice(0, 12);
+let rawItem = fields[10];
+if (rawItem[0] >= 0x80 && rawItem[0] <= 0xb7) {
+  rawItem = rawItem.slice(1);
+} else if (rawItem[0] >= 0xb8 && rawItem[0] <= 0xbf) {
+  const lenCount = rawItem[0] - 0xb7;
+  rawItem = rawItem.slice(1 + lenCount);
+}
+fieldsForPreimage[10] = [ rawItem ];
+
+const preimageRLP = encodeRLP(fieldsForPreimage);
+const fullPreimage = Buffer.concat([Buffer.from([0x44]), preimageRLP]);
+const signingHash = keccak_256(fullPreimage);
+console.log("\nCalculated signingHash:", Buffer.from(signingHash).toString("hex"));
+
+if (isHybrid) {
+  const ecdsaPart = signature.slice(0, 65);
+  const r = ecdsaPart.slice(0, 32);
+  const s = ecdsaPart.slice(32, 64);
+  const v = ecdsaPart[64];
+  
+  console.log("\n--- Assinaturas Separadas ---");
+  console.log("Assinatura SECP256K1 R:", r.toString("hex"));
+  console.log("Assinatura SECP256K1 S:", s.toString("hex"));
+  console.log("Assinatura SECP256K1 v (recId):", v);
+
+  const recoveryId = v >= 27 ? v - 27 : v;
+  console.log("recoveryId deduzido:", recoveryId);
+
+  for (const testRecId of [0, 1]) {
+    try {
+      const rBigInt = BigInt("0x" + r.toString("hex"));
+      const sBigInt = BigInt("0x" + s.toString("hex"));
+      const sigObj = new secp256k1.Signature(rBigInt, sBigInt, testRecId);
+      const recoveredKey = sigObj.recoverPublicKey(signingHash);
+      
+      const recoveredHex = recoveredKey.toHex(false);
+      const combined = Buffer.concat([
+        Buffer.from(recoveredHex.slice(2), "hex"),
+        mldsaPubKey
+      ]);
+      const addrHash = keccak_256(combined);
+      const derivedAddress = "0x" + Buffer.from(addrHash.slice(-20)).toString("hex");
+      console.log(`\n==================================================`);
+      console.log(`[recId = ${testRecId}] DERIVED SENDER ADDRESS:`, derivedAddress);
+      console.log(`==================================================`);
+    } catch (err) {
+      console.error(`Erro com recId ${testRecId}:`, err.message);
+    }
+  }
+} else {
+  console.log("\nTransação pura ML-DSA. Não requer recuperação clássica.");
+}
