@@ -11,12 +11,9 @@ import type {
  * @returns True if the provider supports snaps, false otherwise.
  */
 export async function hasSnapsSupport(
-  provider: MetaMaskInpageProvider = typeof window !== 'undefined' ? window.ethereum : (undefined as any),
+  provider: MetaMaskInpageProvider = window.ethereum,
 ) {
   try {
-    if (!provider) {
-      return false;
-    }
     await provider.request({
       method: 'wallet_getSnaps',
     });
@@ -94,7 +91,7 @@ export async function getSnapsProvider() {
   }
 
   if (await hasSnapsSupport()) {
-    return window.ethereum ?? null;
+    return window.ethereum;
   }
 
   if (window.ethereum?.detected) {

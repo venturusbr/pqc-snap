@@ -1,51 +1,67 @@
-import { expect } from '@jest/globals';
-import type { SnapConfirmationInterface } from '@metamask/snaps-jest';
-import { installSnap } from '@metamask/snaps-jest';
-import { Box, Text, Bold } from '@metamask/snaps-sdk/jsx';
+import { describe, it, expect, beforeEach } from '@jest/globals';
+import { onKeyringRequest, onRpcRequest } from './index';
+import { generateMnemonic } from './crypto';
+import type { SnapState } from './types';
 
-describe('onRpcRequest', () => {
-  describe('hello', () => {
-    it('shows a confirmation dialog', async () => {
-      const { request } = await installSnap();
+describe('Snap Entrypoints (onKeyringRequest & onRpcRequest)', () => {
+  let mockState: SnapState;
 
-      const origin = 'Jest';
-      const response = request({
-        method: 'hello',
-        origin,
-      });
-
-      const ui = (await response.getInterface()) as SnapConfirmationInterface;
-      expect(ui.type).toBe('confirmation');
-      expect(ui).toRender(
-        <Box>
-          <Text>
-            Hello, <Bold>{origin}</Bold>!
-          </Text>
-          <Text>This custom confirmation is just for display purposes.</Text>
-          <Text>
-            But you can edit the snap source code to make it do something, if
-            you want to!
-          </Text>
-        </Box>,
-      );
-
-      await ui.ok();
-
-      expect(await response).toRespondWith(true);
-    });
+  beforeEach(() => {
+    mockState = {
+      mnemonic: generateMnemonic(),
+      accounts: [],
+    };
+    (globalThis as any).snap = {
+      request: async ({ method, params }: { method: string; params?: any }) => {
+        if (method === 'snap_manageState') {
+          if (params?.operation === 'get') {
+            return mockState;
+          }
+          if (params?.operation === 'update') {
+            mockState = params.newState;
+            return mockState;
+          }
+        }
+        return null;
+      },
+    };
   });
 
-  it('throws an error if the requested method does not exist', async () => {
-    const { request } = await installSnap();
-
-    const response = await request({
-      method: 'foo',
+  it('handles keyring_listAccounts and keyring_getAccount via onKeyringRequest', async () => {
+    const accounts = await onKeyringRequest({
+      origin: 'metamask',
+      request: { id: 1, jsonrpc: '2.0', method: 'keyring_listAccounts', params: [] },
     });
+    expect(accounts).toEqual([]);
 
-    expect(response).toRespondWithError({
-      code: -32603,
-      message: 'Method not found.',
-      stack: expect.any(String),
+    await expect(
+      onKeyringRequest({
+        origin: 'metamask',
+        request: { id: 2, jsonrpc: '2.0', method: 'unsupported_method', params: [] },
+      }),
+    ).rejects.toThrow('Método Keyring não suportado');
+  });
+
+  it('handles hello and eth_accounts, and throws on unknown RPC methods via onRpcRequest', async () => {
+    const helloResp = await onRpcRequest({
+      origin: 'http://localhost:8000',
+      request: { id: 0, jsonrpc: '2.0', method: 'hello', params: [] },
     });
+    expect(helloResp).toEqual({ success: true });
+
+    const accounts = await onRpcRequest({
+      origin: 'http://localhost:8000',
+      request: { id: 1, jsonrpc: '2.0', method: 'eth_accounts', params: [] },
+    });
+    expect(accounts).toEqual([]);
+
+    await expect(
+      onRpcRequest({
+        origin: 'http://localhost:8000',
+        request: { id: 2, jsonrpc: '2.0', method: 'foo', params: [] },
+      }),
+    ).rejects.toThrow('Método RPC não encontrado: foo');
   });
 });
+
+

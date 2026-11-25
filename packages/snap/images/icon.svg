@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1035" />
+      <stop offset="50%" stop-color="#2d1254" />
+      <stop offset="100%" stop-color="#0d1b3e" />
+    </linearGradient>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8a2be2" />
+      <stop offset="50%" stop-color="#4361ee" />
+      <stop offset="100%" stop-color="#4cc9f0" />
+    </linearGradient>
+    <linearGradient id="quantumGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00f5d4" />
+      <stop offset="100%" stop-color="#7209b7" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background circular base -->
+  <circle cx="64" cy="64" r="60" fill="url(#bgGrad)" stroke="#4cc9f0" stroke-width="2.5" stroke-opacity="0.6" />
+
+  <!-- Quantum orbital rings (Lattice / Orbitals) -->
+  <ellipse cx="64" cy="64" rx="46" ry="17" fill="none" stroke="#7209b7" stroke-width="2" stroke-dasharray="4 3" transform="rotate(-30 64 64)" stroke-opacity="0.7" />
+  <ellipse cx="64" cy="64" rx="46" ry="17" fill="none" stroke="#00f5d4" stroke-width="2" stroke-dasharray="4 3" transform="rotate(30 64 64)" stroke-opacity="0.7" />
+
+  <!-- PQC Cryptographic Shield -->
+  <path d="M 64 24 L 94 36 C 94 66 80 88 64 99 C 48 88 34 66 34 36 Z" 
+        fill="url(#shieldGrad)" 
+        stroke="#ffffff" 
+        stroke-width="2.5" />
+
+  <!-- Shield inner accent lines -->
+  <path d="M 64 29 L 88 39 C 88 64 76 83 64 92 C 52 83 40 64 40 39 Z" 
+        fill="#130924" 
+        fill-opacity="0.55" 
+        stroke="url(#quantumGlow)" 
+        stroke-width="1.5" />
+
+  <!-- Central Quantum Lock / Atom core -->
+  <circle cx="64" cy="55" r="8" fill="#ffffff" />
+  <circle cx="64" cy="55" r="4.5" fill="#2d1254" />
+  <path d="M 61 58 L 60 74 L 68 74 L 67 58 Z" fill="#ffffff" />
+
+  <!-- Quantum connection nodes -->
+  <circle cx="64" cy="24" r="3" fill="#00f5d4" />
+  <circle cx="94" cy="36" r="3" fill="#4cc9f0" />
+  <circle cx="34" cy="36" r="3" fill="#4cc9f0" />
+  <circle cx="64" cy="99" r="3" fill="#00f5d4" />
+</svg>

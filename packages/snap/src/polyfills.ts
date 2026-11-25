@@ -21,3 +21,5 @@ if (typeof (globalThis as any).WeakRef === 'undefined') {
 if (typeof (globalThis as any).CryptoKey === 'undefined') {
   (globalThis as any).CryptoKey = class CryptoKey {};
 }
+
+export {};

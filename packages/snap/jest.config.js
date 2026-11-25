@@ -1,6 +1,20 @@
 module.exports = {
-  preset: '@metamask/snaps-jest',
+  testEnvironment: 'node',
   transform: {
-    '^.+\\.(t|j)sx?$': 'ts-jest',
+    '^.+\\.[tj]sx?$': [
+      'ts-jest',
+      {
+        isolatedModules: true,
+        tsconfig: {
+          allowJs: true,
+          esModuleInterop: true,
+        },
+      },
+    ],
   },
+  transformIgnorePatterns: [
+    '[/\\\\]node_modules[/\\\\](?!(@noble|@scure|uuid)[/\\\\])',
+  ],
 };
+
+

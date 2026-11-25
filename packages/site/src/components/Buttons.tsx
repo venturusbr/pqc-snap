@@ -2,8 +2,9 @@ import type { ComponentProps } from 'react';
 import styled from 'styled-components';
 
 import { ReactComponent as FlaskFox } from '../assets/flask_fox.svg';
-import { useMetaMask, useRequestSnap } from '../hooks';
-import { shouldDisplayReconnectButton } from '../utils';
+import { useMetaMask } from '../hooks/useMetaMask';
+import { useRequestSnap } from '../hooks/useRequestSnap';
+import { shouldDisplayReconnectButton } from '../utils/button';
 
 const Link = styled.a`
   display: flex;

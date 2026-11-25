@@ -6,3 +6,7 @@ export * from './MetaMask';
 export * from './PoweredBy';
 export * from './SnapLogo';
 export * from './Toggle';
+export * from './DAppHeader';
+export * from './AccountCard';
+export * from './FastTransfer';
+export * from './SnapGuide';

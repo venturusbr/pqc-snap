@@ -3,7 +3,7 @@ import styled, { useTheme } from 'styled-components';
 import { HeaderButtons } from './Buttons';
 import { SnapLogo } from './SnapLogo';
 import { Toggle } from './Toggle';
-import { getThemePreference } from '../utils';
+import { getThemePreference } from '../utils/theme';
 
 const HeaderWrapper = styled.header`
   display: flex;
