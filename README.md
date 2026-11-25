@@ -1,11 +1,11 @@
-# 🛡️ PQC-SNAP: Carteira Pós-Quântica para MetaMask (Hyperledger Besu)
+# 🛡️ PQC-SNAP: Carteira Pós-Quântica para MetaMask (Besu)
 
 [![License](https://img.shields.io/badge/License-Apache%202.0%20%7C%20MIT--0-blue.svg)](LICENSE.APACHE2)
 [![Node](https://img.shields.io/badge/Node-%3E%3D18.6.0-green.svg)](https://nodejs.org/)
 [![Yarn](https://img.shields.io/badge/Yarn-3.2.1-blue.svg)](https://yarnpkg.com/)
 [![MetaMask Snaps](https://img.shields.io/badge/MetaMask%20Snaps-SDK%20v10.3-orange.svg)](https://docs.metamask.io/snaps/)
 
-**PQC-SNAP** é um [MetaMask Snap](https://metamask.io/snaps/) (acompanhado de um dApp simples em Gatsby) que adiciona suporte a **Criptografia Pós-Quântica (PQC)** e **Assinaturas Híbridas** no MetaMask Flask para redes **Hyperledger Besu PQC**.
+**PQC-SNAP** é um [MetaMask Snap](https://metamask.io/snaps/) (acompanhado de um dApp simples em Gatsby) que adiciona suporte a **Criptografia Pós-Quântica (PQC)** e **Assinaturas Híbridas** no MetaMask Flask para redes **Besu PQC**.
 
 Com ele é possível derivar contas com **ML-DSA-44**, **Falcon-512**, **Híbridas (ECDSA + PQC)** e **ECDSA clássica (BIP-44)**, assinar envelopes flexíveis (`0x41`, `0x42`, `0x44`) e clássicos (`0x00`, `0x01`, `0x02`), e inspecionar bytes, gas e recibos diretamente nos **Logs do Snap**.
 
@@ -29,7 +29,7 @@ Com ele é possível derivar contas com **ML-DSA-44**, **Falcon-512**, **Híbrid
 2. **Yarn**: `3.2.1` (habilite via `corepack enable` caso ainda não esteja ativo).
 3. **MetaMask Flask**: extensão de desenvolvimento do MetaMask ([metamask.io/flask](https://metamask.io/flask/)).
    > **Importante:** desative a extensão padrão do MetaMask no mesmo perfil do navegador (ou use um perfil separado apenas com o MetaMask Flask) para evitar conflito no provedor `window.ethereum`.
-4. **Nó Hyperledger Besu PQC** em execução:
+4. **Nó [Besu PQC](https://github.com/venturusbr/besu-pqc-ppi)** em execução:
    - Por padrão, o projeto aponta para `http://localhost:8545`.
    - Por política de segurança do Snap (`packages/snap/src/constants.ts`), conexões `http://` sem TLS são aceitas apenas para `localhost`, `127.0.0.1` e `[::1]`; endpoints remotos devem usar `https://`.
 
@@ -40,7 +40,7 @@ Com ele é possível derivar contas com **ML-DSA-44**, **Falcon-512**, **Híbrid
 ### 1. Instalar dependências e subir o ambiente local
 
 ```bash
-git clone https://github.com/ramonfava/pqc-snap.git
+git clone https://github.com/venturusbr/pqc-snap
 cd PQC-SNAP
 yarn install
 yarn start
@@ -202,7 +202,7 @@ PQC-SNAP/
 │   │   │   ├── crypto/          # Derivação de chaves (BIP-39/44, ML-DSA-44, Falcon-512) e assinaturas
 │   │   │   ├── keyring/         # Implementação da MetaMask Keyring API
 │   │   │   ├── transactions/    # RLP, preimages e gás PR #55 (0x00–0x02, 0x41, 0x42, 0x44)
-│   │   │   ├── rpc/             # Cliente JSON-RPC para Hyperledger Besu
+│   │   │   ├── rpc/             # Cliente JSON-RPC para Besu
 │   │   │   ├── ui/              # Home Page (6 abas), diálogos e LogsTab
 │   │   │   └── index.tsx        # Entrypoint RPC, Keyring, HomePage e UserInput
 │   │   └── snap.manifest.json   # Permissões e manifesto do Snap
